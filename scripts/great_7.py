@@ -10,6 +10,7 @@ import requests
 import argparse
 import threading
 import pandas as pd
+import akshare as ak
 
 from bs4 import BeautifulSoup
 from operator import itemgetter
@@ -75,7 +76,7 @@ def get_data(stock_code):
     return response.text
 
 
-def parse_data(data):
+def parse_data(data, stock_code):
     parsed_data = BeautifulSoup(data, 'html5lib')
     scripts = parsed_data.select('script')
     gold_script = str(scripts[13])
@@ -83,9 +84,9 @@ def parse_data(data):
     stock_name = parsed_data.title.string[:parsed_data.title.string.find('股票股价')]
 
     # 获取当前价格
-    current_price_start = re.search('current"', gold_script, flags=0).span()[0]
-    str_current_price = gold_script[current_price_start:current_price_start + 20]
-    current_price = re.sub(r'[^0-9.]', '', str_current_price)
+    stock_bid_ask_em_df = ak.stock_bid_ask_em(stock_code)
+    current_price = \
+    stock_bid_ask_em_df.loc[stock_bid_ask_em_df['item'] == '最新']['value'].reset_index(drop=True)[0]
 
     return stock_name, float(current_price)
 
@@ -134,22 +135,6 @@ def process_bought_ratio(x):
 
 
 def printer():
-    # print('已跌破买点：')
-    # for item in break_buy_point_list:
-    #     item.append((item[2] - item[1]) / item[1])
-    # break_buy_point_list_sorted = sorted(break_buy_point_list, key=itemgetter(3), reverse=True)
-    # for item in break_buy_point_list_sorted:
-    #     print(f'{item[0]} 已跌破买点 {"%.2f" % (item[3] * 100)}%， 买点： {item[2]}')
-    # print('-' * 15)
-
-    # print('跌停可到买点：')
-    # for item in may_break_buy_point_list:
-    #     item.append((item[1] - item[2]) / item[1])
-    #     item.append(())
-    # may_break_buy_point_list_sorted = sorted(may_break_buy_point_list, key=itemgetter(3))
-    # for item in may_break_buy_point_list_sorted:
-    #     print(f'{item[0]} 离买点 {"%.2f" % (item[3] * 100)}%， 买点：{item[2]}')
-
     print('-' * 15)
     print('跌停可到补点：')
     for item in may_break_supplement_point_list:
@@ -170,7 +155,7 @@ def printer():
     print('-' * 15)
     print('已涨到卖点：')
     for item in break_sale_point_list:
-        print(f'{item[0]} 已涨到卖点，现价：{item[1]}，卖点： {item[2]}')
+        print(f'{item[0]} 已涨到卖点，现价：{item[1]}，卖点： {"%.2f" % item[2]}')
 
     print('-' * 15)
     print('已跌破补点：')
@@ -178,13 +163,13 @@ def printer():
         item.append((item[2] - item[1]) / item[1])
     break_supplement_point_list_sorted = sorted(break_supplement_point_list, key=itemgetter(2), reverse=True)
     for item in break_supplement_point_list_sorted:
-        print(f'{item[0]} 已跌破补点 {"%.2f" % (item[3] * 100)}%， 补点：{item[2]}')
+        print(f'{item[0]} 已跌破补点 {"%.2f" % (item[3] * 100)}%， 补点：{"%.2f" % item[2]}')
     print('-' * 15)
 
 
 def process_(bought_times, stock_code, buy_point, buy_price, iter_percent):
     data = get_data(stock_code)
-    stock_name, current_price_price = parse_data(data)
+    stock_name, current_price_price = parse_data(data, stock_code)
 
     list_processor(bought_times, current_price_price, buy_point, stock_name, buy_price, iter_percent)
 
@@ -193,7 +178,7 @@ def main():
     parser = argparse.ArgumentParser()
 
     # 字符串参数
-    parser.add_argument('-data', default='./data/股票代码.xlsx')
+    parser.add_argument('-data', default='../data/股票代码.xlsx')
     args = parser.parse_args()
 
     # 开始计总消耗时间
@@ -202,7 +187,6 @@ def main():
     # 读取股票买点、卖点等信息
     code_csv_path = args.data
     code_df = pd.read_excel(code_csv_path)
-    print(code_df)
 
     # 制作线程池、每个线程所需的信息和每个线程所执行的函数
     t_list = []
