@@ -117,7 +117,7 @@ def list_processor(bought_times, current_price, buy_point, stock_name, buy_price
             break_supplement_point_list.append([stock_name, current_price, supplement_point])
         if current_price * 0.9 < supplement_point:
             may_break_supplement_point_list.append([stock_name, current_price, supplement_point])
-        if current_price * 1.1 > sale_point:
+        if current_price * 1.1 > sale_point and bought_times > 1:
             may_break_sale_point_list.append([stock_name, current_price, sale_point, gain_value, gain_percent])
 
 
@@ -147,7 +147,7 @@ def printer():
     print('涨停可到卖点：')
     for item in may_break_sale_point_list:
         item.append((item[2] - item[1]) / item[1])
-    may_break_sale_point_list_sorted = sorted(may_break_sale_point_list, key=itemgetter(3))
+    may_break_sale_point_list_sorted = sorted(may_break_sale_point_list, key=itemgetter(5))
     for item in may_break_sale_point_list_sorted:
         print(
             f'{item[0]} 离卖点 {"%.2f" % (item[5] * 100)}%， 卖点：{"%.2f" % item[2]}，最后一手赚了{int(item[3])}（{"%.2f" % item[4]}%）')
