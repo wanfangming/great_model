@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # @日期    : 2021/6/20 9:44
 # @作者  : 万方名
-# @FileName: 未来基金_V6.py
+# @FileName: 未来基金_V7.py
 
 
 import time
